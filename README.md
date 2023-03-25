@@ -1,0 +1,1 @@
+Set your extensions to dev mode. Download or clone these files to a folder. Load an unpacked extension and point to this folder.
