@@ -7,6 +7,9 @@
     "default_popup": "popup.html",
     "default_icon": "microphone.png"
   },
+  "background": {
+    "service_worker": "background.js"
+  },
   "content_scripts": [
     {
       "matches": ["*://*.meet.google.com/*"],
@@ -14,10 +17,15 @@
     }
   ],
   "host_permissions": [
-    "*://*.meet.google.com/*"
+    "*://*.meet.google.com/*",
+    "https://www.googleapis.com/*"
   ],
   "permissions": [
     "tabs",
-    "scripting"
-  ]
+    "identity"
+  ],
+  "oauth2": {
+    "client_id": "465871704290-tqojqn1rd133f9kllfft95g1jlkjlm7l.apps.googleusercontent.com",
+    "scopes": ["https://www.googleapis.com/auth/calendar.events.readonly"]
+  }
 }
