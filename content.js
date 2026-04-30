@@ -98,9 +98,137 @@ function removeOverlay() {
     document.getElementById("meetmute-timer")?.remove();
 }
 
+// --- Captions management ---
+
+let extensionEnabledCaptions = false;
+
+function injectCaptionHideStyle() {
+    if (document.getElementById("meetmute-caption-hide")) return;
+    const style = document.createElement("style");
+    style.id = "meetmute-caption-hide";
+    // visibility:hidden keeps layout stable and doesn't affect MutationObserver
+    style.textContent = '[jsname="YSxPC"] { visibility: hidden !important; }';
+    document.head.appendChild(style);
+}
+
+function enableCaptions() {
+    if (document.querySelector('[aria-label*="Turn off captions"]')) return; // already on
+    const btn = document.querySelector('[aria-label*="Turn on captions"]');
+    if (btn) {
+        btn.click();
+        extensionEnabledCaptions = true;
+        console.log(LOG, "Captions enabled by extension");
+    }
+}
+
+function disableCaptionsIfWeEnabled() {
+    if (!extensionEnabledCaptions) return;
+    extensionEnabledCaptions = false;
+    document.querySelector('[aria-label*="Turn off captions"]')?.click();
+    document.getElementById("meetmute-caption-hide")?.remove();
+}
+
+// --- Filler detection ---
+// Caption jsnames are internal to Meet and may change after a Meet update.
+// If detection stops working, inspect the caption area in DevTools and look for
+// the container with aria-live="polite" and text spans inside speaker blocks.
+const FILLER_REGEX = /\b(um+|uh+|ah+|er+|hmm+)\b/i;
+const captionTextCache = new Map(); // element -> last processed text
+let captionObserver = null;
+
+function findCaptionContainer() {
+    return (
+        document.querySelector('[jsname="YSxPC"]') ||
+        document.querySelector('[aria-live="polite"][jsname]')
+    );
+}
+
+function getSpeaker(captionTextEl) {
+    const block = captionTextEl.closest('[jsname="nkK6Yc"]');
+    return block?.querySelector('[jsname="Rn7Mcf"]')?.textContent.trim() ?? "";
+}
+
+function checkCaptionForFillers(el) {
+    if (getSpeaker(el) !== "You") return;
+    const text = el.textContent;
+    const prev = captionTextCache.get(el) ?? "";
+    const newText = text.slice(prev.length);
+    captionTextCache.set(el, text);
+    if (newText && FILLER_REGEX.test(newText)) {
+        showFillerReminder();
+    }
+}
+
+function showFillerReminder() {
+    let el = document.getElementById("meetmute-filler-reminder");
+    if (!el) {
+        el = document.createElement("div");
+        el.id = "meetmute-filler-reminder";
+        el.style.cssText = `
+            position: fixed;
+            top: 50px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(234, 67, 53, 0.88);
+            color: #fff;
+            font-family: 'Google Sans', Roboto, sans-serif;
+            font-size: 13px;
+            font-weight: 500;
+            padding: 4px 12px;
+            border-radius: 6px;
+            letter-spacing: 0.3px;
+            z-index: 2147483647;
+            pointer-events: none;
+            user-select: none;
+            opacity: 0;
+            transition: opacity 0.2s;
+        `;
+        el.textContent = "Watch the fillers!";
+        document.body.appendChild(el);
+    }
+    clearTimeout(el._hideTimeout);
+    el.style.opacity = "1";
+    el._hideTimeout = setTimeout(() => { el.style.opacity = "0"; }, 3000);
+}
+
+function startCaptionObserver() {
+    if (captionObserver) return;
+    const container = findCaptionContainer();
+    if (!container) return;
+
+    captionObserver = new MutationObserver(mutations => {
+        for (const mutation of mutations) {
+            if (mutation.type === "characterData") {
+                const el = mutation.target.parentElement;
+                if (el?.matches('[jsname="tgaKEf"]')) checkCaptionForFillers(el);
+            }
+            for (const node of mutation.addedNodes) {
+                if (node.nodeType !== Node.ELEMENT_NODE) continue;
+                const els = node.matches('[jsname="tgaKEf"]')
+                    ? [node]
+                    : [...node.querySelectorAll('[jsname="tgaKEf"]')];
+                els.forEach(checkCaptionForFillers);
+            }
+        }
+    });
+
+    captionObserver.observe(container, { childList: true, subtree: true, characterData: true });
+    console.log(LOG, "Caption observer started");
+}
+
+function stopCaptionObserver() {
+    captionObserver?.disconnect();
+    captionObserver = null;
+    captionTextCache.clear();
+    document.getElementById("meetmute-filler-reminder")?.remove();
+}
+
 async function startTimer() {
     if (timerInterval) return;
     console.log(LOG, "Starting timer");
+
+    injectCaptionHideStyle();
+    enableCaptions();
 
     const startTime = Date.now();
     let endTimeStr = null;
@@ -123,8 +251,13 @@ async function startTimer() {
             clearInterval(timerInterval);
             timerInterval = null;
             removeOverlay();
+            stopCaptionObserver();
+            disableCaptionsIfWeEnabled();
             return;
         }
+
+        enableCaptions();       // no-op if already on; retries until CC button is present
+        startCaptionObserver(); // no-op if already running or container not yet in DOM
 
         const overlay = getOrCreateOverlay();
 

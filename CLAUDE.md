@@ -47,6 +47,28 @@ Then remove `background.js`, the `identity` permission, `oauth2` block, and `htt
 - Corporate calendar data does NOT flow through the GCP project — it goes browser ↔ Google APIs directly
 - Colleagues using the extension may hit Workspace org policies blocking third-party OAuth apps
 
+## Filler detection
+
+### How it works
+- On call start, `enableCaptions()` clicks the CC button if not already on, and injects a CSS rule (`visibility: hidden`) to hide the caption container from the user while keeping it in the DOM
+- A `MutationObserver` watches the caption container for new/updated text nodes
+- Only captions labeled "You" (Meet's label for the local user) are checked — other participants are ignored
+- `captionTextCache` tracks last-seen text per element so only the *new suffix* is checked, avoiding re-firing on Meet's in-place transcript corrections
+- On meeting end, if the extension enabled CC it turns it back off and removes the hide style
+
+### Fragile selectors
+These are Meet-internal jsnames that may break after a Meet update:
+- `[jsname="YSxPC"]` — caption scroller container (hidden via CSS, observed via MutationObserver)
+- `[jsname="nkK6Yc"]` — individual speaker caption block
+- `[jsname="Rn7Mcf"]` — speaker name label within a block
+- `[jsname="tgaKEf"]` — caption text span within a block
+
+If filler detection stops working, open DevTools on a Meet tab with captions enabled and inspect the caption area to find the updated selectors. Look for an `aria-live="polite"` container.
+
+### Known edge case
+If the user manually turns CC off mid-meeting, the extension won't re-enable it — filler detection silently stops. This is intentional (respecting user intent).
+
 ## Known issues / next steps
+- **MV3 message channel error**: `content.js` occasionally logs "message channel closed before a response was received" when `getMeetingEndTime` is called. This is a known MV3 issue — the background service worker can go dormant and close the channel before responding. May cause the countdown timer to fall back to elapsed mode unreliably. Needs investigation.
 - Consider whether to keep console logging long-term or strip it before "release"
 - Single toggle button was discussed but intentionally deferred — user prefers two explicit buttons for safety
