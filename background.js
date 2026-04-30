@@ -1,6 +1,29 @@
 const LOG = "[MeetMute/bg]";
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+    if (request.type === "checkAuthStatus") {
+        chrome.identity.getAuthToken({ interactive: false }, token => {
+            const ok = !chrome.runtime.lastError && !!token;
+            sendResponse({ authenticated: ok });
+        });
+        return true;
+    }
+
+    if (request.type === "triggerAuth") {
+        chrome.identity.getAuthToken({ interactive: true }, token => {
+            const ok = !chrome.runtime.lastError && !!token;
+            sendResponse({ authenticated: ok });
+        });
+        return true;
+    }
+
+    if (request.type === "logout") {
+        chrome.identity.clearAllCachedAuthTokens(() => {
+            sendResponse({ authenticated: false });
+        });
+        return true;
+    }
+
     if (request.type === "getMeetingEndTime") {
         console.log(LOG, "Received getMeetingEndTime for code:", request.meetingCode);
         fetchMeetingEndTime(request.meetingCode)

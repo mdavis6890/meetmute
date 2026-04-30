@@ -65,58 +65,27 @@ function formatTime(totalSeconds) {
     return `${m}:${String(s).padStart(2, "0")}`;
 }
 
-// Finds the clock element in Meet's bottom bar by matching a time-like text node.
-function findClockElement() {
-    const timeRegex = /^\d{1,2}:\d{2}(\s*[AP]M)?$/i;
-    for (const el of document.querySelectorAll("span")) {
-        if (timeRegex.test(el.textContent.trim()) && !el.querySelector("*")) {
-            return el;
-        }
-    }
-    return null;
-}
-
 function createOverlay() {
     const el = document.createElement("span");
     el.id = "meetmute-timer";
-
-    const clockEl = findClockElement();
-    if (clockEl) {
-        console.log(LOG, "Injecting timer next to clock element:", clockEl.textContent.trim());
-        el.style.cssText = `
-            color: #fff;
-            font-family: 'Google Sans', Roboto, sans-serif;
-            font-size: 14px;
-            font-weight: 400;
-            margin-left: 10px;
-            letter-spacing: 0.5px;
-            vertical-align: middle;
-            pointer-events: none;
-            user-select: none;
-        `;
-        clockEl.insertAdjacentElement("afterend", el);
-    } else {
-        console.warn(LOG, "Clock element not found — using fixed-position fallback");
-        el.style.cssText = `
-            position: fixed;
-            top: 16px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.65);
-            color: #fff;
-            font-family: 'Google Sans', Roboto, sans-serif;
-            font-size: 14px;
-            font-weight: 400;
-            padding: 4px 10px;
-            border-radius: 6px;
-            letter-spacing: 0.5px;
-            z-index: 2147483647;
-            pointer-events: none;
-            user-select: none;
-        `;
-        document.body.appendChild(el);
-    }
-
+    el.style.cssText = `
+        position: fixed;
+        top: 16px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(0, 0, 0, 0.65);
+        color: #fff;
+        font-family: 'Google Sans', Roboto, sans-serif;
+        font-size: 14px;
+        font-weight: 400;
+        padding: 4px 10px;
+        border-radius: 6px;
+        letter-spacing: 0.5px;
+        z-index: 2147483647;
+        pointer-events: none;
+        user-select: none;
+    `;
+    document.body.appendChild(el);
     return el;
 }
 

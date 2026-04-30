@@ -29,17 +29,6 @@ background.js  →  chrome.identity.getAuthToken  →  Calendar API  →  return
 - Turns red when < 5 minutes remain; shows `+MM:SS` for overtime or when no Calendar event found
 - Falls back to elapsed timer (`+MM:SS`) if Calendar lookup fails
 
-### DOM injection (partially working)
-`findClockElement()` tries to find Meet's clock `<span>` by matching a time regex and insert the timer inline next to it. This is currently NOT finding the element — reason unknown, likely Meet renders it in a way that doesn't match the selector. Until resolved, the timer falls back to a **fixed-position overlay (top-center)**.
-
-**TODO: Investigate clock element selector.** In DevTools on a Meet tab during a call, run:
-```js
-[...document.querySelectorAll('span')].filter(el =>
-  /^\d{1,2}:\d{2}(\s*[AP]M)?$/i.test(el.textContent.trim()) && !el.querySelector('*')
-)
-```
-If that returns nothing, Meet's clock might be in a Shadow DOM or use a non-`<span>` element. Try `document.querySelectorAll('[data-formatted-time]')` or inspect the bottom-left bar manually.
-
 ### Option 1 revert
 To drop Calendar API and use a fixed duration instead, replace `getEndTime()` in `content.js` with:
 ```js
@@ -59,6 +48,5 @@ Then remove `background.js`, the `identity` permission, `oauth2` block, and `htt
 - Colleagues using the extension may hit Workspace org policies blocking third-party OAuth apps
 
 ## Known issues / next steps
-- Clock element injection not working — timer sits in top-center fallback position instead of next to the clock in the bottom bar
 - Consider whether to keep console logging long-term or strip it before "release"
 - Single toggle button was discussed but intentionally deferred — user prefers two explicit buttons for safety

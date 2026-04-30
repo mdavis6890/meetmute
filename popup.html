@@ -2,13 +2,96 @@
 <html>
   <head>
     <title>MeetMute</title>
+    <style>
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        min-width: 200px;
+        padding: 12px 16px;
+        margin: 0;
+        background: #fff;
+        color: #202124;
+      }
+      h1 {
+        font-size: 16px;
+        font-weight: 600;
+        margin: 0 0 12px;
+      }
+      #auth-status {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        font-size: 12px;
+        padding: 6px 10px;
+        border-radius: 8px;
+        margin-bottom: 12px;
+        background: #f1f3f4;
+      }
+      #auth-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        flex-shrink: 0;
+        background: #9aa0a6; /* grey while loading */
+      }
+      #auth-status.ok   { background: #e6f4ea; }
+      #auth-status.ok   #auth-dot { background: #34a853; }
+      #auth-status.fail { background: #fce8e6; }
+      #auth-status.fail #auth-dot { background: #ea4335; }
+      #auth-label { flex: 1; }
+      #signin-btn, #logout-btn {
+        display: none;
+        margin-top: 4px;
+        width: 100%;
+        padding: 6px 0;
+        font-size: 12px;
+        font-weight: 500;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+      }
+      #signin-btn { color: #fff; background: #1a73e8; }
+      #signin-btn:hover { background: #1765cc; }
+      #logout-btn { color: #c5221f; background: transparent; border: 1px solid #c5221f; }
+      #logout-btn:hover { background: #fce8e6; }
+      .mute-row {
+        display: flex;
+        gap: 8px;
+      }
+      .mute-row input[type=button] {
+        flex: 1;
+        padding: 7px 0;
+        font-size: 13px;
+        font-weight: 500;
+        border: 1px solid #dadce0;
+        border-radius: 6px;
+        background: #f8f9fa;
+        cursor: pointer;
+        color: #202124;
+      }
+      .mute-row input[type=button]:disabled {
+        opacity: 0.45;
+        cursor: default;
+      }
+      .mute-row input[type=button]:not(:disabled):hover {
+        background: #e8eaed;
+      }
+    </style>
   </head>
   <body>
     <h1>MeetMute</h1>
-    <form>
+
+    <div id="auth-status">
+      <div id="auth-dot"></div>
+      <span id="auth-label">Checking…</span>
+    </div>
+    <button id="signin-btn">Sign in with Google</button>
+    <button id="logout-btn">Sign out</button>
+
+    <div class="mute-row">
       <input type="button" id="mutebutton" value="Mute" disabled>
       <input type="button" id="unmutebutton" value="UnMute" disabled>
-    </form>
+    </div>
+
     <script src="popup.js"></script>
   </body>
 </html>
